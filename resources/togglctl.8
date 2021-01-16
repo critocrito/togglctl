@@ -1,0 +1,47 @@
+.Dd January 16, 2021
+.Dt TOGGLCTL 8
+.Os
+.Sh NAME
+.Nm togglctl
+.Nd control the Toggl time tracking service in your shell
+.Sh SYNOPSIS
+.Nm
+.Op Fl dhV
+.Ar command
+.Op Ar argument ...
+.Sh DESCRIPTION
+The
+.Nm
+program allows to manage time tracking entries on the Toggl Track service at https://track.toggl.com.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Op Fl d
+Enable debug output.
+.It Op Fl h
+Print the usage message of
+.Nm
+and exit.
+.It Op Fl V
+Print the version of
+.Nm
+and exit.
+.El
+.Pp
+The following commands are available:
+.Bl -tag -width Ds
+.It Cm set-auth Ar api-token
+Set the API token that should be used by
+.Nm
+.
+.It Cm projects
+List all projects across all workspaces.
+.It Cm start Ar project
+Start a new timer for
+.Ar project
+.
+.It Cm stop
+Stop the currently running timer.
+.El
+.Sh EXIT STATUS
+.Ex -std
