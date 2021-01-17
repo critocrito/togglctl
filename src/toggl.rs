@@ -62,5 +62,6 @@ pub fn workspaces_list() -> Result<Vec<Project>> {
         projects.append(&mut workspace_projects);
     }
 
-    Ok(projects.sort_by(|a, b| b.name.cmp(&a.name)))
+    projects.sort_by(|a, b| b.name.cmp(&a.name));
+    Ok(projects)
 }
