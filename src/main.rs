@@ -1,7 +1,4 @@
-use anyhow::{Context, Result};
-use directories::ProjectDirs;
-use std::fs::{self, create_dir_all};
-use std::path::PathBuf;
+mod cmd;
 
 const HELP: &str = "\
 USAGE: togglctl [-dhV] command [command_args]
@@ -39,27 +36,6 @@ fn abort(msg: &str) {
     std::process::exit(1);
 }
 
-fn token_cache() -> Result<PathBuf> {
-    let project = ProjectDirs::from("net", "smoking-heaps", "togglctl").unwrap();
-    let cfg_dir = project.config_dir();
-    create_dir_all(&cfg_dir)
-        .with_context(|| format!("Failed to create config dir {:?}", cfg_dir))?;
-    Ok(cfg_dir.join("api_token"))
-}
-
-fn load_token() -> Result<String> {
-    let token_path = token_cache()?;
-    let token = fs::read_to_string(token_path)
-        .context("Failed to load API token. Maybe try: togglctl set-auth <token>")?;
-    Ok(token)
-}
-
-fn store_token(token: &str) -> Result<()> {
-    let token_path = token_cache()?;
-    fs::write(token_path, token)?;
-    Ok(())
-}
-
 fn main() {
     let mut pargs = pico_args::Arguments::from_env();
 
@@ -88,7 +64,7 @@ fn main() {
                 None => return print_help(),
                 Some(s) => s,
             };
-            if let Err(e) = store_token(&token) {
+            if let Err(e) = cmd::set_auth(&token) {
                 return abort(&e.to_string());
             }
         }
@@ -97,34 +73,14 @@ fn main() {
                 None => return print_help(),
                 Some(s) => s,
             };
-            let token = match load_token() {
-                Ok(t) => t,
-                Err(e) => {
-                    return abort(&e.to_string());
-                }
-            };
 
-            print!("{} {}, {:?}, {}", "projects", project, args, token);
+            print!("{} {}, {:?}", "projects", project, args);
         }
         "start" => {
-            let token = match load_token() {
-                Ok(t) => t,
-                Err(e) => {
-                    return abort(&e.to_string());
-                }
-            };
-
-            print!("{}, {:?}, {}", "start", args, token);
+            print!("{}, {:?}", "start", args);
         }
         "stop" => {
-            let token = match load_token() {
-                Ok(t) => t,
-                Err(e) => {
-                    return abort(&e.to_string());
-                }
-            };
-
-            print!("{}, {:?}, {}", "stop", args, token);
+            print!("{}, {:?}", "stop", args);
         }
         _ => print_help(),
     };
