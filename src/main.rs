@@ -1,3 +1,4 @@
+mod alfred;
 mod auth;
 mod cache;
 mod cmd;
@@ -7,6 +8,8 @@ const HELP: &str = "\
 USAGE: togglctl [-dhV] command [command_args]
 
 FLAGS:
+  -o, --output          Set the output format to something else than the default.
+                        Options are: alfred. The default is to print a list.
   -d, --debug           Enable debug output
   -h, --help            Prints help information
   -V, --version         Print version information
@@ -20,8 +23,15 @@ COMMANDS:
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug)]
+enum Output {
+    Stdout,
+    Alfred,
+}
+
+#[derive(Debug)]
 struct Args {
     debug: bool,
+    output: Output,
 }
 
 fn print_help() {
@@ -39,6 +49,13 @@ fn abort(msg: &str) {
     std::process::exit(1);
 }
 
+fn parse_output(s: &str) -> Result<Output, &'static str> {
+    match s {
+        "alfred" => Ok(Output::Alfred),
+        _ => Ok(Output::Stdout),
+    }
+}
+
 fn main() {
     let mut pargs = pico_args::Arguments::from_env();
 
@@ -54,6 +71,9 @@ fn main() {
 
     let args = Args {
         debug: pargs.contains(["-d", "--debug"]),
+        output: pargs
+            .value_from_fn("-o", parse_output)
+            .unwrap_or(Output::Stdout),
     };
 
     let subcommand = match pargs.subcommand().unwrap() {
@@ -71,11 +91,23 @@ fn main() {
                 return abort(&e.to_string());
             }
         }
-        "projects" => {
-            if let Err(e) = cmd::projects() {
-                return abort(&e.to_string());
-            }
-        }
+        "projects" => match cmd::projects() {
+            Err(e) => return abort(&e.to_string()),
+            Ok(projects) => match args.output {
+                Output::Alfred => {
+                    let output = alfred::AlfredFormat::from_projects(&projects);
+                    match serde_json::to_string(&output) {
+                        Ok(s) => println!("{}", s),
+                        Err(e) => return abort(&e.to_string()),
+                    };
+                }
+                _ => {
+                    for project in projects {
+                        println!("{}/{}", project.id, project.name);
+                    }
+                }
+            },
+        },
         "start" => {
             let project = match pargs.subcommand().unwrap() {
                 None => return print_help(),

@@ -6,7 +6,7 @@
 .Nd control the Toggl time tracking service in your shell
 .Sh SYNOPSIS
 .Nm
-.Op Fl dhV
+.Op Fl odhV
 .Ar command
 .Op Ar argument ...
 .Sh DESCRIPTION
@@ -16,6 +16,15 @@ program allows to manage time tracking entries on the Toggl Track service at htt
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
+.It Op Fl o Ar modifier
+The output
+.Ar modifier
+changes the format of the results. As a default results are printed as a list.
+.Pp
+.Bl -tag -width  XXXXXXXXXXXX -compact
+.It Ar alfred
+Print the output in an Alfred compatible format.
+.El
 .It Op Fl d
 Enable debug output.
 .It Op Fl h

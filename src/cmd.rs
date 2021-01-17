@@ -11,7 +11,7 @@ pub fn set_auth(token: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn projects() -> Result<()> {
+pub fn projects() -> Result<Vec<toggl::Project>> {
     let projects = match cache::retrieve_projects_cache() {
         Ok(projects) => projects,
         Err(_) => {
@@ -21,9 +21,5 @@ pub fn projects() -> Result<()> {
         }
     };
 
-    for project in projects {
-        println!("{}/{}", project.id, project.name);
-    }
-
-    Ok(())
+    Ok(projects)
 }
