@@ -11,9 +11,17 @@ struct Workspace {
     name: String,
 }
 
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Deserialize)]
+pub struct Project {
+    pub id: usize,
+    #[serde(rename = "wid")]
+    pub workspace_id: usize,
+    pub name: String,
+}
+
 fn make_request<T>(api_path: &str) -> Result<T>
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned + Default,
 {
     let token = load_token()?;
     let auth = encode(format!("{}:api_token", token));
@@ -35,13 +43,24 @@ where
         }
         Err(e) => Err(e),
     };
-    let data: T = response?.into_json()?;
+    let data: T = match response?.into_json() {
+        Ok(d) => d,
+        Err(_) => Default::default(),
+    };
 
     Ok(data)
 }
 
-pub fn workspaces_list() -> Result<Vec<Workspace>> {
-    let body: Vec<Workspace> = make_request("workspaces")?;
+pub fn workspaces_list() -> Result<Vec<Project>> {
+    let workspaces: Vec<Workspace> = make_request("workspaces")?;
 
-    Ok(body)
+    let mut projects: Vec<Project> = vec![];
+
+    for w in workspaces {
+        let project_url = format!("workspaces/{}/projects", w.id);
+        let mut workspace_projects: Vec<Project> = make_request(&project_url)?;
+        projects.append(&mut workspace_projects);
+    }
+
+    Ok(projects.sort_by(|a, b| b.name.cmp(&a.name)))
 }

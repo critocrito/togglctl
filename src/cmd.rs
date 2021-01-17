@@ -11,6 +11,11 @@ pub fn set_auth(token: &str) -> Result<()> {
 }
 
 pub fn projects() -> Result<()> {
-    toggl::workspaces_list()?;
+    let projects = toggl::workspaces_list()?;
+
+    for project in projects {
+        println!("{}/{}", project.id, project.name);
+    }
+
     Ok(())
 }
