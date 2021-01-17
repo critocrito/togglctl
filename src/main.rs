@@ -1,4 +1,6 @@
+mod auth;
 mod cmd;
+mod toggl;
 
 const HELP: &str = "\
 USAGE: togglctl [-dhV] command [command_args]
@@ -69,15 +71,17 @@ fn main() {
             }
         }
         "projects" => {
+            if let Err(e) = cmd::projects() {
+                return abort(&e.to_string());
+            }
+        }
+        "start" => {
             let project = match pargs.subcommand().unwrap() {
                 None => return print_help(),
                 Some(s) => s,
             };
 
-            print!("{} {}, {:?}", "projects", project, args);
-        }
-        "start" => {
-            print!("{}, {:?}", "start", args);
+            print!("{}, {}, {:?}", "start", project, args);
         }
         "stop" => {
             print!("{}, {:?}", "stop", args);
