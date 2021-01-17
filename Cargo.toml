@@ -15,3 +15,4 @@ url = "2.2"
 pico-args = { version = "0.4.0", features = ["short-space-opt"]}
 directories = "3.0"
 ureq = { version = "*", features = ["json", "tls"] }
+fuzzy-matcher = "*"

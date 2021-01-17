@@ -1,3 +1,6 @@
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
+
 mod alfred;
 mod auth;
 mod cache;
@@ -16,7 +19,8 @@ FLAGS:
 
 COMMANDS:
   set-auth              Cache the Toggl API token
-  projects              List all projects
+  projects [<filter>]   List all projects. Optionally provide a filter string to
+                        fuzzy match projects by project name.
   start <project>       Start a timer for <project>
   stop                  Stop the currently running timer
 ";
@@ -93,20 +97,43 @@ fn main() {
         }
         "projects" => match cmd::projects() {
             Err(e) => return abort(&e.to_string()),
-            Ok(projects) => match args.output {
-                Output::Alfred => {
-                    let output = alfred::AlfredFormat::from_projects(&projects);
-                    match serde_json::to_string(&output) {
-                        Ok(s) => println!("{}", s),
-                        Err(e) => return abort(&e.to_string()),
-                    };
-                }
-                _ => {
-                    for project in projects {
-                        println!("{}/{}", project.id, project.name);
+            Ok(projects) => {
+                let projects = match pargs.subcommand().unwrap() {
+                    None => projects,
+                    Some(filter) => {
+                        let matcher = SkimMatcherV2::default();
+
+                        let mut matched_projects: Vec<(i64, crate::toggl::Project)> = vec![];
+
+                        for project in projects {
+                            if let Some(score) = matcher.fuzzy_match(&project.name, &filter) {
+                                matched_projects.push((score, project));
+                            }
+                        }
+
+                        matched_projects.sort_by(|(a_score, _), (b_score, _)| b_score.cmp(a_score));
+                        matched_projects
+                            .into_iter()
+                            .map(|(_, project)| project)
+                            .collect::<Vec<crate::toggl::Project>>()
+                    }
+                };
+
+                match args.output {
+                    Output::Alfred => {
+                        let output = alfred::AlfredFormat::from_projects(&projects);
+                        match serde_json::to_string(&output) {
+                            Ok(s) => println!("{}", s),
+                            Err(e) => return abort(&e.to_string()),
+                        };
+                    }
+                    _ => {
+                        for project in projects {
+                            println!("{}/{}", project.id, project.name);
+                        }
                     }
                 }
-            },
+            }
         },
         "start" => {
             let project = match pargs.subcommand().unwrap() {
