@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::fs;
 
 use crate::auth::token_cache;
+use crate::cache;
 use crate::toggl;
 
 pub fn set_auth(token: &str) -> Result<()> {
@@ -11,7 +12,14 @@ pub fn set_auth(token: &str) -> Result<()> {
 }
 
 pub fn projects() -> Result<()> {
-    let projects = toggl::workspaces_list()?;
+    let projects = match cache::retrieve_projects_cache() {
+        Ok(projects) => projects,
+        Err(_) => {
+            let projects = toggl::workspaces_list()?;
+            cache::cache_projects(&projects)?;
+            projects
+        }
+    };
 
     for project in projects {
         println!("{}/{}", project.id, project.name);

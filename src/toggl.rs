@@ -1,17 +1,17 @@
 use anyhow::{bail, Result};
 use base64::encode;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use url::Url;
 
 use crate::auth::load_token;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Workspace {
     id: usize,
     name: String,
 }
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Deserialize)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Project {
     pub id: usize,
     #[serde(rename = "wid")]
