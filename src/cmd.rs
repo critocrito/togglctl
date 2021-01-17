@@ -23,3 +23,9 @@ pub fn projects() -> Result<Vec<toggl::Project>> {
 
     Ok(projects)
 }
+
+pub fn start_timer(project: &str) -> Result<()> {
+    let project: usize = project.parse()?;
+    toggl::start_timer(project)?;
+    Ok(())
+}

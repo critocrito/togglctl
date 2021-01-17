@@ -141,7 +141,7 @@ fn main() {
                 Some(s) => s,
             };
 
-            print!("{}, {}, {:?}", "start", project, args);
+            cmd::start_timer(&project).unwrap();
         }
         "stop" => {
             print!("{}, {:?}", "stop", args);
