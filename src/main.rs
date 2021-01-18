@@ -144,7 +144,7 @@ fn main() {
             cmd::start_timer(&project).unwrap();
         }
         "stop" => {
-            print!("{}, {:?}", "stop", args);
+            cmd::stop_timer().unwrap();
         }
         _ => print_help(),
     };

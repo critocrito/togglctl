@@ -20,21 +20,37 @@ pub struct Project {
     pub name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Timer {
+    pub id: usize,
+    #[serde(rename = "wid")]
+    pub workspace_id: usize,
+    pub start: DateTime<Utc>,
+}
+
 #[derive(Debug, Serialize)]
-struct Timer {
+struct TimerReq {
     pid: usize,
     start: DateTime<Utc>,
     created_with: String,
 }
 
 #[derive(Debug, Serialize)]
-struct TimerReq {
-    time_entry: Timer,
+struct TimerReqEnvelope {
+    time_entry: TimerReq,
 }
 
-fn get_request<T>(api_path: &str) -> Result<T>
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct DataEnvelope<T>
 where
-    T: DeserializeOwned + Default,
+    T: Serialize,
+{
+    data: T,
+}
+
+fn get_request<T>(api_path: &str) -> Result<Option<T>>
+where
+    T: DeserializeOwned,
 {
     let token = load_token()?;
     let auth = encode(format!("{}:api_token", token));
@@ -56,9 +72,10 @@ where
         }
         Err(e) => Err(e),
     };
-    let data: T = match response?.into_json() {
-        Ok(d) => d,
-        Err(_) => Default::default(),
+
+    let data: Option<T> = match response?.into_json() {
+        Ok(d) => Some(d),
+        Err(_) => None,
     };
 
     Ok(data)
@@ -91,15 +108,43 @@ where
     Ok(())
 }
 
+fn put_request(api_path: &str) -> Result<()> {
+    let token = load_token()?;
+    let auth = encode(format!("{}:api_token", token));
+
+    // The ending slash is significant, otherwise "v8" gets stripped from the
+    // path.
+    let endpoint = Url::parse("https://api.track.toggl.com/api/v8/")?;
+    let url = endpoint.join(api_path)?;
+
+    match ureq::put(url.as_str())
+        .set("Authorization", format!("Basic {}", auth).as_str())
+        .set("Content-Type", "application/json")
+        // The API requires this to be set
+        .set("Content-Length", "0")
+        .call()
+    {
+        Ok(r) => Ok(r),
+        Err(ureq::Error::Status(_, r)) => {
+            let msg = format!("HTTP error {}: {}", r.status(), r.get_url());
+            bail!(msg)
+        }
+        Err(e) => Err(e),
+    }?;
+
+    Ok(())
+}
+
 pub fn workspaces_list() -> Result<Vec<Project>> {
-    let workspaces: Vec<Workspace> = get_request("workspaces")?;
+    let workspaces: Vec<Workspace> = get_request("workspaces")?.unwrap_or(vec![]);
 
     let mut projects: Vec<Project> = vec![];
 
     for w in workspaces {
         let project_url = format!("workspaces/{}/projects", w.id);
-        let mut workspace_projects: Vec<Project> = get_request(&project_url)?;
-        projects.append(&mut workspace_projects);
+        if let Some(mut workspace_projects) = get_request::<Vec<Project>>(&project_url)? {
+            projects.append(&mut workspace_projects);
+        }
     }
 
     projects.sort_by(|a, b| b.name.cmp(&a.name));
@@ -107,8 +152,8 @@ pub fn workspaces_list() -> Result<Vec<Project>> {
 }
 
 pub fn start_timer(project_id: usize) -> Result<()> {
-    let req = TimerReq {
-        time_entry: Timer {
+    let req = TimerReqEnvelope {
+        time_entry: TimerReq {
             pid: project_id,
             start: Utc::now(),
             created_with: "togglctl".to_string(),
@@ -116,6 +161,21 @@ pub fn start_timer(project_id: usize) -> Result<()> {
     };
 
     post_request("time_entries/start", req)?;
+
+    Ok(())
+}
+
+pub fn running_timer() -> Result<Option<Timer>> {
+    match get_request::<DataEnvelope<Timer>>("time_entries/current")? {
+        Some(data) => Ok(Some(data.data)),
+        None => Ok(None),
+    }
+}
+
+pub fn stop_current_timer() -> Result<()> {
+    if let Some(timer) = running_timer()? {
+        put_request(format!("time_entries/{}/stop", timer.id).as_str())?;
+    }
 
     Ok(())
 }
