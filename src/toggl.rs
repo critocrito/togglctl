@@ -135,7 +135,7 @@ fn put_request(api_path: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn workspaces_list() -> Result<Vec<Project>> {
+pub fn list_projects() -> Result<Vec<Project>> {
     let workspaces: Vec<Workspace> = get_request("workspaces")?.unwrap_or(vec![]);
 
     let mut projects: Vec<Project> = vec![];
@@ -165,7 +165,7 @@ pub fn start_timer(project_id: usize) -> Result<()> {
     Ok(())
 }
 
-pub fn running_timer() -> Result<Option<Timer>> {
+pub fn get_running_timer() -> Result<Option<Timer>> {
     match get_request::<DataEnvelope<Timer>>("time_entries/current")? {
         Some(data) => Ok(Some(data.data)),
         None => Ok(None),
@@ -173,7 +173,7 @@ pub fn running_timer() -> Result<Option<Timer>> {
 }
 
 pub fn stop_current_timer() -> Result<()> {
-    if let Some(timer) = running_timer()? {
+    if let Some(timer) = get_running_timer()? {
         put_request(format!("time_entries/{}/stop", timer.id).as_str())?;
     }
 

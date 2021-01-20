@@ -15,7 +15,7 @@ pub fn projects() -> Result<Vec<toggl::Project>> {
     let projects = match cache::retrieve_projects_cache() {
         Ok(projects) => projects,
         Err(_) => {
-            let projects = toggl::workspaces_list()?;
+            let projects = toggl::list_projects()?;
             cache::cache_projects(&projects)?;
             projects
         }
