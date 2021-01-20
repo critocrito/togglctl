@@ -92,7 +92,7 @@ jobs:
         release_version="$(cat artifacts/release-version)"
         echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
         echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
-        echo "TARGET_FLAGS='--target ${{ matrix.target }}'" >> $GITHUB_ENV
+        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
 
     - name: Show command used for Cargo
       run: |
