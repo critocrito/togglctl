@@ -13,7 +13,7 @@ pub struct AlfredText {
 #[serde(rename_all = "camelCase")]
 pub struct AlfredItem {
     title: String,
-    subtitle: String,
+    // subtitle: Option<String>,
     arg: String,
     text: AlfredText,
 }
@@ -22,7 +22,7 @@ impl AlfredItem {
     pub fn from_project(project: &Project) -> Self {
         Self {
             title: project.name.clone(),
-            subtitle: project.id.to_string(),
+            // subtitle: None,
             arg: project.id.to_string(),
             text: AlfredText {
                 copy: project.name.clone(),

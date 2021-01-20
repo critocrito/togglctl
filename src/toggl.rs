@@ -15,6 +15,8 @@ struct Workspace {
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Project {
     pub id: usize,
+    #[serde(skip_deserializing)]
+    pub workspace: String,
     #[serde(rename = "wid")]
     pub workspace_id: usize,
     pub name: String,
@@ -142,8 +144,16 @@ pub fn list_projects() -> Result<Vec<Project>> {
 
     for w in workspaces {
         let project_url = format!("workspaces/{}/projects", w.id);
-        if let Some(mut workspace_projects) = get_request::<Vec<Project>>(&project_url)? {
-            projects.append(&mut workspace_projects);
+        if let Some(workspace_projects) = get_request::<Vec<Project>>(&project_url)? {
+            projects.append(
+                &mut workspace_projects
+                    .into_iter()
+                    .map(|mut p| {
+                        p.workspace = w.name.clone();
+                        p
+                    })
+                    .collect(),
+            );
         }
     }
 

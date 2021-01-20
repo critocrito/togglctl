@@ -129,7 +129,7 @@ fn main() {
                     }
                     _ => {
                         for project in projects {
-                            println!("{}/{}", project.id, project.name);
+                            println!("{} - {}", project.name, project.workspace);
                         }
                     }
                 }
