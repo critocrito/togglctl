@@ -93,22 +93,35 @@ jobs:
         echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
         echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
         echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
 
     - name: Show command used for Cargo
       run: |
         echo "release version is: ${{ env.RELEASE_VERSION }}"
         echo "release upload url is: ${{ env.RELEASE_UPLOAD_URL }}"
         echo "target flag is: ${{ env.TARGET_FLAGS }}"
+        echo "target dir is: ${{ env.TARGET_DIR }}"
 
     - name: Build togglctl
       shell: bash
       run: cargo build --release ${{ env.TARGET_FLAGS }}
 
     - name: Strip release binary (macos)
-      run: strip "target/${{ matrix.target }}/release/togglctl"
+      run: strip "${{ env.TARGET_DIR }}/release/togglctl"
+
+    - name: Build archive
+      shell: bash
+      run: |
+        staging="togglctl-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
+        mkdir -p "$staging"/doc
+        cp {README.md,LICENSE} "$staging/"
+        cp resources/togglctl.1 "$staging/doc/"
+        cp "${{ env.TARGET_DIR }}/release/togglctl" "$staging/"
+        tar czf "$staging.tar.gz" "$staging"
+        echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
 
     - name: Upload release archive
-      uses: actions/upload-release-asset@v1.0.1
+      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
